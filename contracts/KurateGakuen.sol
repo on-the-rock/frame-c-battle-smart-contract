@@ -1,6 +1,5 @@
 pragma solidity ^0.5.0;
 
-
 /**
  * @title SafeMath
  * @dev Math operations with safety checks that revert on error
@@ -299,7 +298,7 @@ contract IERC721 is IERC165 {
      * @dev Transfers a specific NFT (`tokenId`) from one account (`from`) to
      * another (`to`).
      *
-     * 
+     *
      *
      * Requirements:
      * - `from`, `to` cannot be zero.
@@ -949,15 +948,49 @@ contract ERC721Full is ERC721, ERC721Enumerable, ERC721Metadata {
     }
 }
 
-contract MyToken is ERC721Full {
-  uint256 internal nextTokenId = 0;
+contract ERC721Ownable is Ownable , ERC721Full{
+    modifier OnlyOwnerOfTokenOrContract(uint256 tokenId){
+        require(isOwner() || msg.sender == ownerOf(tokenId));
+    _;
+    }
+    modifier OnlyOwnerOfToken(uint256 tokenId){
+        require(msg.sender == ownerOf(tokenId));
+    _;
+    }
+}
 
-  constructor() public ERC721Full("cosfes", "COS") {}
 
-  function mint() external {
-    uint256 tokenId = nextTokenId;
-    nextTokenId = nextTokenId.add(1);
+contract KurateGakuen is ERC721Ownable{
+  struct Card{
+      //get name and images from metadata
+      uint8 attack;
+      uint8 hitPoint;
+      uint8 rarity;
+      uint8 cost;
+      uint8 attackTYpe;
+      uint8[] specials;
+      bool isMaster;
+  }
+  Card[] Cards;
+
+  constructor() public ERC721Full("KurateGakuen", "KG") {}
+
+  //Feature: on next abi encoder update, we can use returns (Card)
+  function getCard(uint256 tokenId) external view returns (uint8,uint8,uint8,uint8,uint8,uint8[] memory,bool){
+      Card memory card = Cards[tokenId];
+      return (card.attack, card.hitPoint, card.rarity, card.cost,card.attackTYpe,card.specials,card.isMaster);
+  }
+
+  function mint( uint8 attack,uint8 hitPoint,uint8 rarity,uint8 cost,uint8 attackTYpe,uint8[] calldata specials,bool isMaster) onlyOwner external{
+    uint256 tokenId = Cards.push(Card(attack, hitPoint, rarity, cost, attackTYpe, specials,isMaster)).sub(1) ;
     super._mint(msg.sender, tokenId);
   }
-  //TODO: implement some function ex.setTokenURI
+
+  function setTokenURI(uint256 tokenId, string calldata uri) external OnlyOwnerOfTokenOrContract(tokenId){
+    super._setTokenURI(tokenId, uri);
+  }
+
+  function burn(uint256 tokenId) external OnlyOwnerOfTokenOrContract(tokenId){
+    super._burn(msg.sender, tokenId);
+  }
 }
