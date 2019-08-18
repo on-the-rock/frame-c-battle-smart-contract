@@ -205,6 +205,54 @@ library Address {
     }
 }
 
+library Strings {
+  function strConcat(string memory _a, string memory _b, string memory _c, string memory _d, string memory _e) internal pure returns (string memory) {
+      bytes memory _ba = bytes(_a);
+      bytes memory _bb = bytes(_b);
+      bytes memory _bc = bytes(_c);
+      bytes memory _bd = bytes(_d);
+      bytes memory _be = bytes(_e);
+      string memory abcde = new string(_ba.length + _bb.length + _bc.length + _bd.length + _be.length);
+      bytes memory babcde = bytes(abcde);
+      uint k = 0;
+      for (uint i = 0; i < _ba.length; i++) babcde[k++] = _ba[i];
+      for (uint i = 0; i < _bb.length; i++) babcde[k++] = _bb[i];
+      for (uint i = 0; i < _bc.length; i++) babcde[k++] = _bc[i];
+      for (uint i = 0; i < _bd.length; i++) babcde[k++] = _bd[i];
+      for (uint i = 0; i < _be.length; i++) babcde[k++] = _be[i];
+      return string(babcde);
+    }
+
+    function strConcat(string memory _a, string memory _b, string memory _c, string memory _d) internal pure returns (string memory) {
+        return strConcat(_a, _b, _c, _d, "");
+    }
+
+    function strConcat(string memory _a, string memory _b, string memory _c) internal pure returns (string memory) {
+        return strConcat(_a, _b, _c, "", "");
+    }
+
+    function strConcat(string memory _a, string memory _b) internal pure returns (string memory) {
+        return strConcat(_a, _b, "", "", "");
+    }
+
+    function uint2str(uint i) internal pure returns (string memory) {
+        if (i == 0) return "0";
+        uint j = i;
+        uint len;
+        while (j != 0){
+            len++;
+            j /= 10;
+        }
+        bytes memory bstr = new bytes(len);
+        uint k = len - 1;
+        while (i != 0){
+            bstr[k--] = byte(uint8(48 + i % 10));
+            i /= 10;
+        }
+        return string(bstr);
+    }
+}
+
 /**
  * @dev Interface of the ERC165 standard, as defined in the
  * [EIP](https://eips.ethereum.org/EIPS/eip-165).
@@ -859,9 +907,6 @@ contract ERC721Metadata is ERC165, ERC721, IERC721Metadata {
     // Token symbol
     string private _symbol;
 
-    // Optional mapping for token URIs
-    mapping(uint256 => string) private _tokenURIs;
-
     /*
      *     bytes4(keccak256('name()')) == 0x06fdde03
      *     bytes4(keccak256('symbol()')) == 0x95d89b41
@@ -899,27 +944,6 @@ contract ERC721Metadata is ERC165, ERC721, IERC721Metadata {
     }
 
     /**
-     * @dev Returns an URI for a given token ID.
-     * Throws if the token ID does not exist. May return an empty string.
-     * @param tokenId uint256 ID of the token to query
-     */
-    function tokenURI(uint256 tokenId) external view returns (string memory) {
-        require(_exists(tokenId), "ERC721Metadata: URI query for nonexistent token");
-        return _tokenURIs[tokenId];
-    }
-
-    /**
-     * @dev Internal function to set the token URI for a given token.
-     * Reverts if the token ID does not exist.
-     * @param tokenId uint256 ID of the token to set its URI
-     * @param uri string URI to assign
-     */
-    function _setTokenURI(uint256 tokenId, string memory uri) internal {
-        require(_exists(tokenId), "ERC721Metadata: URI set of nonexistent token");
-        _tokenURIs[tokenId] = uri;
-    }
-
-    /**
      * @dev Internal function to burn a specific token.
      * Reverts if the token does not exist.
      * Deprecated, use _burn(uint256) instead.
@@ -928,11 +952,6 @@ contract ERC721Metadata is ERC165, ERC721, IERC721Metadata {
      */
     function _burn(address owner, uint256 tokenId) internal {
         super._burn(owner, tokenId);
-
-        // Clear metadata (if any)
-        if (bytes(_tokenURIs[tokenId]).length != 0) {
-            delete _tokenURIs[tokenId];
-        }
     }
 }
 
@@ -960,37 +979,51 @@ contract ERC721Ownable is Ownable , ERC721Full{
 }
 
 
-contract KurateGakuen is ERC721Ownable{
+contract FrameCBattle is ERC721Ownable{
   struct Card{
       //get name and images from metadata
       uint8 attack;
       uint8 hitPoint;
       uint8 rarity;
       uint8 cost;
+      uint8 attribute;
       uint8 attackTYpe;
       uint8[] specials;
       bool isMaster;
   }
   Card[] Cards;
+  string tokenMetadataBaseURI = "https://storage.framecbattle.com/metadata/";
 
-  constructor() public ERC721Full("KurateGakuen", "KG") {}
+  constructor() public ERC721Full("FrameCBattle", "FCB") {}
 
   //Feature: on next abi encoder update, we can use returns (Card)
-  function getCard(uint256 tokenId) external view returns (uint8,uint8,uint8,uint8,uint8,uint8[] memory,bool){
+  function getCard(uint256 tokenId) external view returns (uint8 attack,uint8 hitPoint,uint8 cost,uint8 attribute,uint8 attackTYpe,uint8,uint8[] memory specials,bool isMaster){
       Card memory card = Cards[tokenId];
-      return (card.attack, card.hitPoint, card.rarity, card.cost,card.attackTYpe,card.specials,card.isMaster);
+      return (card.attack, card.hitPoint, card.rarity, card.cost, card.attribute, card.attackTYpe,card.specials,card.isMaster);
   }
 
-  function mint( uint8 attack,uint8 hitPoint,uint8 rarity,uint8 cost,uint8 attackTYpe,uint8[] calldata specials,bool isMaster) onlyOwner external{
-    uint256 tokenId = Cards.push(Card(attack, hitPoint, rarity, cost, attackTYpe, specials,isMaster)).sub(1) ;
+  function mint(uint8 attack,uint8 hitPoint,uint8 rarity,uint8 cost, uint8 attribute, uint8 attackTYpe,uint8[] calldata specials,bool isMaster) onlyOwner external{
+    uint256 tokenId = Cards.push(Card(attack, hitPoint, rarity, cost, attribute, attackTYpe, specials,isMaster)).sub(1) ;
     super._mint(msg.sender, tokenId);
   }
 
-  function setTokenURI(uint256 tokenId, string calldata uri) external OnlyOwnerOfTokenOrContract(tokenId){
-    super._setTokenURI(tokenId, uri);
-  }
-
-  function burn(uint256 tokenId) external OnlyOwnerOfTokenOrContract(tokenId){
+  function burn(uint256 tokenId) onlyOwner external{
     super._burn(msg.sender, tokenId);
   }
+
+  function resetTokenMetadataBaseURI(string calldata uri) onlyOwner external{
+      tokenMetadataBaseURI = uri;
+  }
+
+  /**
+   * @dev Returns an URI for a given token ID
+   * Throws if the token ID does not exist. May return an empty string.
+   * @param _tokenId uint256 ID of the token to query
+   */
+  function tokenURI(uint256 _tokenId) public view returns (string memory) {
+     return Strings.strConcat(
+        tokenMetadataBaseURI,
+        Strings.uint2str(_tokenId)
+     );
+   }
 }
