@@ -1,0 +1,19 @@
+{
+  "name": "batch-transfer-wrapper",
+  "version": "1.0.0",
+  "description": "",
+  "main": "batch-transfer/truffle.js",
+  "directories": {
+    "test": "batch-transfer/test"
+  },
+  "scripts": {
+    "dev": "lite-server"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "openzeppelin-solidity": "1.9.0",
+    "truffle-hdwallet-provider": "^1.0.17"
+  }
+}
