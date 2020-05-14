@@ -76,8 +76,12 @@ module.exports = {
       // production: true    // Treats this network as if it was a public net. (default: false)
     // }
     tomoTest: {
-      provider: () => new HDWalletProvider(mnemonic, `https://testnet.tomochain.com`),
-      gas: 4000000,
+      provider: () => new HDWalletProvider(mnemonic, `https://testnet.tomochain.com`,0,
+        1,
+        true,
+        "m/44'/889'/0'/0/"),
+      gasPrice: 10000000000000,
+      gas: 13000000,
       network_id: 89
     },
     tomo: {
